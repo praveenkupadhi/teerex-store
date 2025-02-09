@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface GlobalState {
+export interface GlobalState {
   storeName: string;
 }
 

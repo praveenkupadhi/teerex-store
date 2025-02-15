@@ -88,6 +88,7 @@ export default function Home() {
                       <p>{`${product.currency} ${product.price}`}</p>
                       {product.cartQuantity === 0 && (
                         <button
+                          disabled={!product.quantity}
                           onClick={() => dispatch(addProductToCart(product.id))}
                         >
                           Add to cart

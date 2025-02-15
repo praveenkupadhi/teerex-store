@@ -17,8 +17,7 @@ export interface ProductsState {
   products: Product[];
   backupProducts?: Product[];
   loading?: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-  cartMap?: Record<'id' | 'quantity', { id: number; quantity: number }> | {};
+  cartMap?: Record<number, number>;
 }
 
 export interface AddBulkProductsAction extends ProductsState {
@@ -46,6 +45,13 @@ const productsSlice = createSlice({
         state.products = [...state.products, ...products];
       }
       state.backupProducts = [...state.products];
+      state.products.forEach(
+        (product) =>
+          (state.cartMap = {
+            ...state.cartMap,
+            [product.id]: product.cartQuantity
+          })
+      );
       state.loading = false;
     },
     addProductToCart: (state, action: PayloadAction<number>) => {
@@ -89,6 +95,8 @@ const productsSlice = createSlice({
             if (
               !state.products.find((product) => product.id === backupProduct.id)
             ) {
+              backupProduct['cartQuantity'] =
+                state.cartMap?.[backupProduct.id] ?? 0;
               return backupProduct;
             }
           }
@@ -102,6 +110,13 @@ const productsSlice = createSlice({
           : products.sort((a, b) => a.id - b.id);
         return;
       }
+      state.products.forEach(
+        (product) =>
+          (state.cartMap = {
+            ...state.cartMap,
+            [product.id]: product.cartQuantity
+          })
+      );
       const filteredProducts = state.products.filter(
         ({ name, type, color }) => {
           return (

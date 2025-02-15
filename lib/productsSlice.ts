@@ -17,6 +17,8 @@ export interface ProductsState {
   products: Product[];
   backupProducts?: Product[];
   loading?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  cartMap?: Record<'id' | 'quantity', { id: number; quantity: number }> | {};
 }
 
 export interface AddBulkProductsAction extends ProductsState {
@@ -26,11 +28,12 @@ export interface AddBulkProductsAction extends ProductsState {
 const initialState: ProductsState = {
   products: [],
   backupProducts: [],
-  loading: true
+  loading: true,
+  cartMap: {}
 };
 
 const productsSlice = createSlice({
-  name: 'global',
+  name: 'products',
   initialState,
   reducers: {
     addBulkProducts: (state, action: PayloadAction<AddBulkProductsAction>) => {
@@ -57,7 +60,10 @@ const productsSlice = createSlice({
       } else {
         product.cartQuantity = 1;
       }
-      state.backupProducts = [...state.products];
+      state.cartMap = {
+        ...state.cartMap,
+        [action.payload]: product.cartQuantity
+      };
     },
     removeProductFromCart: (state, action: PayloadAction<number>) => {
       const product = state.products.find(
@@ -69,16 +75,34 @@ const productsSlice = createSlice({
       if (product.cartQuantity > 0) {
         product.cartQuantity -= 1;
       }
-      state.backupProducts = [...state.products];
+      state.cartMap = {
+        ...state.cartMap,
+        [action.payload]: product.cartQuantity
+      };
     },
     searchProducts(state, action: PayloadAction<string | undefined>) {
       const searchData = action.payload;
-      const backupProducts = state.backupProducts as Product[];
+      const backupProducts = [...(state.backupProducts as Product[])];
       if (!searchData) {
-        state.products = [...backupProducts];
+        const filteredBackupProducts = backupProducts.filter(
+          (backupProduct) => {
+            if (
+              !state.products.find((product) => product.id === backupProduct.id)
+            ) {
+              return backupProduct;
+            }
+          }
+        );
+        const products = [
+          ...state.products,
+          ...filteredBackupProducts
+        ] as Product[];
+        state.products = !products.length
+          ? products
+          : products.sort((a, b) => a.id - b.id);
         return;
       }
-      const filteredProducts = backupProducts.filter(
+      const filteredProducts = state.products.filter(
         ({ name, type, color }) => {
           return (
             name.toLowerCase().split(' ').join('').includes(searchData) ||

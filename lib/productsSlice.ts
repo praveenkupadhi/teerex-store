@@ -15,12 +15,13 @@ export interface Product {
 
 export interface ProductsState {
   products: Product[];
-  backupProducts?: Product[];
-  loading?: boolean;
-  cartMap?: Record<number, number>;
+  backupProducts: Product[];
+  loading: boolean;
+  cartMap: Record<number, number>;
 }
 
-export interface AddBulkProductsAction extends ProductsState {
+export interface AddBulkProductsAction {
+  products: Product[];
   replace?: boolean;
 }
 
@@ -37,21 +38,14 @@ const productsSlice = createSlice({
   reducers: {
     addBulkProducts: (state, action: PayloadAction<AddBulkProductsAction>) => {
       state.loading = true;
-      const products = action.payload.products;
-      products.forEach((product: Product) => (product.cartQuantity = 0));
-      if (action.payload.replace) {
-        state.products = [...products];
-      } else {
-        state.products = [...state.products, ...products];
-      }
+      const products = action.payload.products.map((product) => {
+        product.cartQuantity = 0;
+        return product;
+      });
+      state.products = action.payload.replace
+        ? [...products]
+        : [...state.products, ...products];
       state.backupProducts = [...state.products];
-      state.products.forEach(
-        (product) =>
-          (state.cartMap = {
-            ...state.cartMap,
-            [product.id]: product.cartQuantity
-          })
-      );
       state.loading = false;
     },
     addProductToCart: (state, action: PayloadAction<number>) => {
@@ -66,10 +60,7 @@ const productsSlice = createSlice({
       } else {
         product.cartQuantity = 1;
       }
-      state.cartMap = {
-        ...state.cartMap,
-        [action.payload]: product.cartQuantity
-      };
+      state.cartMap[action.payload] = product.cartQuantity;
     },
     removeProductFromCart: (state, action: PayloadAction<number>) => {
       const product = state.products.find(
@@ -81,51 +72,38 @@ const productsSlice = createSlice({
       if (product.cartQuantity > 0) {
         product.cartQuantity -= 1;
       }
-      state.cartMap = {
-        ...state.cartMap,
-        [action.payload]: product.cartQuantity
-      };
+      state.cartMap[action.payload] = product.cartQuantity;
     },
     searchProducts(state, action: PayloadAction<string | undefined>) {
       const searchData = action.payload;
       const backupProducts = [...(state.backupProducts as Product[])];
       if (!searchData) {
-        const filteredBackupProducts = backupProducts.filter(
-          (backupProduct) => {
-            if (
-              !state.products.find((product) => product.id === backupProduct.id)
-            ) {
-              backupProduct['cartQuantity'] =
-                state.cartMap?.[backupProduct.id] ?? 0;
-              return backupProduct;
-            }
-          }
-        );
-        const products = [
-          ...state.products,
-          ...filteredBackupProducts
-        ] as Product[];
-        state.products = !products.length
-          ? products
-          : products.sort((a, b) => a.id - b.id);
+        const filteredBackupProducts = backupProducts
+          .filter(
+            (backupProduct) =>
+              !state.products.some((product) => product.id === backupProduct.id)
+          )
+          .map((backupProduct) => {
+            return {
+              ...backupProduct,
+              cartQuantity: state.cartMap?.[backupProduct.id] ?? 0
+            };
+          });
+        state.products = [...state.products, ...filteredBackupProducts];
         return;
       }
-      state.products.forEach(
-        (product) =>
-          (state.cartMap = {
-            ...state.cartMap,
-            [product.id]: product.cartQuantity
-          })
-      );
       const filteredProducts = state.products.filter(
         ({ name, type, color }) => {
           return (
-            name.toLowerCase().split(' ').join('').includes(searchData) ||
+            name.toLowerCase().replace(/\s+/g, '').includes(searchData) ||
             type.toLowerCase().includes(searchData) ||
             color.toLowerCase().includes(searchData)
           );
         }
       );
+      filteredProducts.forEach((product) => {
+        state.cartMap[product.id] = product.cartQuantity;
+      });
       state.products = [...filteredProducts];
     }
   }

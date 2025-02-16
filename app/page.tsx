@@ -71,53 +71,59 @@ export default function Home() {
             <h2>No Products Found.</h2>
           ) : (
             <>
-              {products.map((product) => {
-                return (
-                  <div key={product.id}>
-                    <div>
-                      <Image
-                        src={product.imageURL}
-                        alt={product.name}
-                        width={100}
-                        height={100}
-                        priority={true}
-                        className="w-auto h-auto"
-                      />
-                    </div>
-                    <div>
-                      <p>{`${product.currency} ${product.price}`}</p>
-                      {product.cartQuantity === 0 && (
-                        <button
-                          disabled={!product.quantity}
-                          onClick={() => dispatch(addProductToCart(product.id))}
-                        >
-                          Add to cart
-                        </button>
-                      )}
-                      {product.cartQuantity > 0 && (
-                        <div className="flex justify-between">
+              {[...products]
+                .sort((a, b) => a.id - b.id)
+                .map((product) => {
+                  return (
+                    <div key={product.id}>
+                      <div>
+                        <Image
+                          src={product.imageURL}
+                          alt={product.name}
+                          width={100}
+                          height={100}
+                          priority={true}
+                          className="w-auto h-auto"
+                        />
+                      </div>
+                      <div>
+                        <p>{`${product.currency} ${product.price}`}</p>
+                        {product.cartQuantity === 0 && (
                           <button
-                            onClick={() =>
-                              dispatch(removeProductFromCart(product.id))
-                            }
-                          >
-                            -
-                          </button>
-                          <p>{product.cartQuantity}</p>
-                          <button
+                            disabled={!product.quantity}
                             onClick={() =>
                               dispatch(addProductToCart(product.id))
                             }
-                            disabled={product.quantity === product.cartQuantity}
                           >
-                            +
+                            Add to cart
                           </button>
-                        </div>
-                      )}
+                        )}
+                        {product.cartQuantity > 0 && (
+                          <div className="flex justify-between">
+                            <button
+                              onClick={() =>
+                                dispatch(removeProductFromCart(product.id))
+                              }
+                            >
+                              -
+                            </button>
+                            <p>{product.cartQuantity}</p>
+                            <button
+                              onClick={() =>
+                                dispatch(addProductToCart(product.id))
+                              }
+                              disabled={
+                                product.quantity === product.cartQuantity
+                              }
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </>
           )}
         </div>
